@@ -1,0 +1,37 @@
+[Unit]
+Description=Cinema Seat Booking service
+# Start after the network is up and (if present) Redis is running.
+After=network-online.target redis.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+# Run as a dedicated non-root user you create on the host (see README).
+User=cinema
+Group=cinema
+
+# Must point at the dir that contains the "static/" folder, because the
+# app serves files with http.Dir("static") (a path relative to the CWD).
+WorkingDirectory=/opt/cinema-seat-booking
+ExecStart=/opt/cinema-seat-booking/cinema
+
+# Configuration via environment variables (defaults shown).
+# Override here, or move them into the EnvironmentFile below.
+Environment=REDIS_ADDR=localhost:6379
+Environment=LISTEN_ADDR=:8080
+# Optional: keep overrides in a file not tracked in git. "-" = ok if missing.
+EnvironmentFile=-/etc/cinema-booking.env
+
+# The app log.Fatals if Redis isn't reachable on startup, so keep retrying.
+Restart=on-failure
+RestartSec=2
+
+# --- journald ---
+# Both are "journal" by default in modern systemd; set explicitly for clarity.
+StandardOutput=journal
+StandardError=journal
+# Tag every log line so `journalctl -t cinema-booking` works too.
+SyslogIdentifier=cinema-booking
+
+[Install]
+WantedBy=multi-user.target
